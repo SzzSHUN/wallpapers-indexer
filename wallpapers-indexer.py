@@ -11,7 +11,7 @@ from PIL import Image, ExifTags
 SCRIPTNEV="wallpapers-indexer.py"
 SCRIPTVERZIO="20210408.1857"
 #Globális változók értékének feltöltése az lapértelmezésekkel
-WALLPAPERS_DIR="./"
+WALLPAPERS_DIR="."
 KIMENETFAJLNEV="INDEX.md"
 OUTPUT_MD=f"{WALLPAPERS_DIR}/{KIMENETFAJLNEV}"
 IMAGE_WIDTH=150
@@ -132,7 +132,10 @@ def KepekFeldolgozasa():
 					sFilesize = kilo_mega_giga(filebytesize)
 					kepfajlok.append( {"nev":dirfile.name,"utvonal":dirfile.path,"meret":sFilesize,"dimenzio":imgDimension,"orientacio":intOrientation} )
 			print(f"{KIMENETFAJLNEV} összeállítása...")
+			print(f"Útvonal: {OUTPUT_MD}")
+			print(f"{len(kepfajlok)} képfájl található a gyűjteményben.")
 			FilePointer = open(OUTPUT_MD,"w")
+			print("Kimeneti fájl megnyitva.")
 			FilePointer.write("# Háttérképek index fájl\n\n")
 			FilePointer.write(f"###### {len(kepfajlok)} képfájl található a gyűjteményben.\n\n")
 			FilePointer.write("Háttérkép|Adatok\n")
@@ -153,6 +156,7 @@ def KepekFeldolgozasa():
 		finally:
 			if( FilePointer != None ):
 				FilePointer.close()
+				print("Kimeneti fájl lezárva.")
 	else: #Ha a könyvtár nem létezik, akkor kilépünk hibaüzenettel.
 		print_to_stderr(f"A(z) {WALLPAPERS_DIR} könyvtár nem létezik! [WALLPAPERS_DIR]")
 		return
