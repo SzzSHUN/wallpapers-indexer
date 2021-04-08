@@ -9,7 +9,7 @@ import getopt
 from PIL import Image, ExifTags
 
 SCRIPTNEV="wallpapers-indexer.py"
-SCRIPTVERZIO="20210408.1857"
+SCRIPTVERZIO="20210408.2051"
 #Globális változók értékének feltöltése az lapértelmezésekkel
 WALLPAPERS_DIR="."
 KIMENETFAJLNEV="INDEX.md"
