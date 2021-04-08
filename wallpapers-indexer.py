@@ -9,7 +9,7 @@ import getopt
 from PIL import Image, ExifTags
 
 SCRIPTNEV="wallpapers-indexer.py"
-SCRIPTVERZIO="20210408.1538"
+SCRIPTVERZIO="20210408.1857"
 #Globális változók értékének feltöltése az lapértelmezésekkel
 WALLPAPERS_DIR="./"
 KIMENETFAJLNEV="INDEX.md"
@@ -113,36 +113,13 @@ def KepekFeldolgozasa():
 		#Ha a könyvtár létezik, akkor végigjárjuk a könyvtár képeit és kiírjuk az adatokat az OUTPUT_MD változó által meghatározott fájlba.
 		FilePointer = None
 		kepfajlok = []
-		sProgress = [	">         ",
-						" >        ",
-						"  >       ",
-						"   >      ",
-						"    >     ",
-						"     >    ",
-						"      >   ",
-						"       >  ",
-						"        > ",
-						"         >",
-						"         <",
-						"        < ",
-						"       <  ",
-						"      <   ",
-						"     <    ",
-						"    <     ",
-						"   <      ",
-						"  <       ",
-						" <        ",
-						"<         "
-					]
-		iProgress = 0
 		try:
+			print("Képek feldolgozása...")
 			for dirfile in os.scandir(path=WALLPAPERS_DIR):
 				if( dirfile.path.lower().endswith(".jpg")
 					or dirfile.path.lower().endswith(".jpeg")
 					or dirfile.path.lower().endswith(".png")
 					or dirfile.path.lower().endswith(".gif")):
-					print(f"Feldolgozás: {sProgress[iProgress]}",end="\r")
-					iProgress = iProgress + 1 if iProgress + 1 < len(sProgress) else 0
 					wallpaper = Image.open(dirfile.path)
 					imgDimension = wallpaper.size
 					exifData = wallpaper.getexif()
@@ -154,28 +131,23 @@ def KepekFeldolgozasa():
 					filebytesize = os.path.getsize(dirfile.path)
 					sFilesize = kilo_mega_giga(filebytesize)
 					kepfajlok.append( {"nev":dirfile.name,"utvonal":dirfile.path,"meret":sFilesize,"dimenzio":imgDimension,"orientacio":intOrientation} )
-			print("Feldolgozás: ok{}".format(" "*(len(sProgress[0])-2)))
+			print(f"{KIMENETFAJLNEV} összeállítása...")
 			FilePointer = open(OUTPUT_MD,"w")
 			FilePointer.write("# Háttérképek index fájl\n\n")
 			FilePointer.write(f"###### {len(kepfajlok)} képfájl található a gyűjteményben.\n\n")
 			FilePointer.write("Háttérkép|Adatok\n")
 			FilePointer.write("---------|------\n")
-			iProgress = 0
 			if( len(kepfajlok) > 0 ):
 				kepfajlok.sort(key=lambda k: k.get('nev'))
 				for kepfajl in kepfajlok:
-					print(f"{KIMENETFAJLNEV} összeállítása: {sProgress[iProgress]}",end="\r")
-					iProgress = iProgress + 1 if iProgress + 1 < len(sProgress) else 0
 					if( kepfajl["orientacio"] == 6 or kepfajl["orientacio"] == 8 ):
 						sDimenzio= f"{kepfajl['dimenzio'][1]}*{kepfajl['dimenzio'][0]}"
 					else:
 						sDimenzio= f"{kepfajl['dimenzio'][0]}*{kepfajl['dimenzio'][1]}"
 					FilePointer.write(f"<img src=\"./{kepfajl['nev']}\" width=\"{IMAGE_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* {kepfajl['nev']}<br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
-				print("{fajlnev} összeállítása: ok{szokozok}\n".format(fajlnev=KIMENETFAJLNEV, szokozok=" "*(len(sProgress[0])-2)),end="\r")
 			else:
 				FilePointer.write(" :confused: | *Nincsennek képfájlok!* ")
 		except Exception as e:
-			#print_to_stderr(f"{e}")
 			raise e
 			return
 		finally:
