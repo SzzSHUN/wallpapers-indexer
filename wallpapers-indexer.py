@@ -34,7 +34,7 @@ def kilo_mega_giga(int_byte):
 #Parancssori paraméterek feldolgozása
 # True értékkel tér vissza, ha megkezdhető a munka.
 def ParancssorFeldolgozasa():
-	global OUTPUT_MD, WALLPAPERS_DIR, KIMENETFAJLNEV, IMAGE_WIDTH
+	global SCRIPTNEV,OUTPUT_MD, WALLPAPERS_DIR, KIMENETFAJLNEV, IMAGE_WIDTH
 	bResult = True
 	SCRIPTNEV = sys.argv[0]
 	if( len(sys.argv) > 1 ):
