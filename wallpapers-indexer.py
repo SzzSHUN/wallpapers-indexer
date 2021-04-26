@@ -63,7 +63,6 @@ def ParancssorFeldolgozasa():
 
 #Súgó szöveg kiírása
 def ParancssorSugo():
-	global SCRIPTNEV,SCRIPTVERZIO,IMAGE_WIDTH
 	print(f"""Név: {SCRIPTNEV}
 Verzió: {SCRIPTVERZIO}
 Leírás: PingvinSarok közösség Wallpapers repójának indexelője
@@ -98,12 +97,10 @@ Példák:
 
 #A script verziójának kiírása
 def ParancssorVerzio():
-	global SCRIPTVERZIO
 	print(SCRIPTVERZIO)
 
 #Képek feldolgozása
 def KepekFeldolgozasa():
-	global OUTPUT_MD, WALLPAPERS_DIR, KIMENETFAJLNEV, IMAGE_WIDTH
 	print(f"Képfájlok könyvtára: {WALLPAPERS_DIR}")
 	print(f"Kimeneti fájl: {OUTPUT_MD}")
 	print(f"Képek szélessége: {IMAGE_WIDTH}px")
@@ -132,7 +129,6 @@ def KepekFeldolgozasa():
 					sFilesize = kilo_mega_giga(filebytesize)
 					kepfajlok.append( {"nev":dirfile.name,"utvonal":dirfile.path,"meret":sFilesize,"dimenzio":imgDimension,"orientacio":intOrientation} )
 			print(f"{KIMENETFAJLNEV} összeállítása...")
-			print(f"Útvonal: {OUTPUT_MD}")
 			print(f"{len(kepfajlok)} képfájl található a gyűjteményben.")
 			FilePointer = open(OUTPUT_MD,"w")
 			print("Kimeneti fájl megnyitva.")
