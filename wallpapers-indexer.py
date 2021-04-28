@@ -9,7 +9,8 @@ import getopt
 from PIL import Image, ExifTags
 
 SCRIPTNEV="wallpapers-indexer.py"
-SCRIPTVERZIO="20210428.1036"
+SCRIPTVERZIO="20210428.1829"
+
 #Globális változók értékének feltöltése az lapértelmezésekkel
 WALLPAPERS_DIRPATH="."
 THUMBIMAGES_DIRNAME=".thumbs"
