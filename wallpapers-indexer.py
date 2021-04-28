@@ -40,6 +40,7 @@ def kilo_mega_giga(int_byte):
 # True értékkel tér vissza, ha megkezdhető a munka.
 def ParancssorFeldolgozasa():
 	global SCRIPTNEV,OUTPUT_MD, WALLPAPERS_DIRPATH, KIMENETFAJLNEV, THUMBNAIL_WIDTH
+	global THUMBIMAGES_DIRNAME, THUMBIMAGES_DIRPATH
 	bResult = True
 	SCRIPTNEV = sys.argv[0]
 	if( len(sys.argv) > 1 ):
@@ -136,13 +137,13 @@ def GetThumbFilePath(eredeti):
 	bontott=os.path.split(eredeti)
 	sUtvonal=bontott[0].rstrip('/')
 	sFajlnev=bontott[1] if len(bontott[1])>0 else None
-	if( sFaljnev != None ):
+	if( sFajlnev != None ):
 		if( os.path.isdir(sUtvonal) ):
-			sResult="{1}/{2}/{3}".format(sUtvonal,THUMBIMAGES_DIRNAME,GetThumbFilename(bontott[1]))
-		else
+			sResult="{0}/{1}/{2}".format(sUtvonal,THUMBIMAGES_DIRNAME,GetThumbFileName(bontott[1]))
+		else:
 			sResult=None
 			hibakiiras(f"GetThumbFilePath: '{sUtvonal}' nem könyvtár [{eredeti}].")
-	else
+	else:
 		sResult=None
 		hibakiiras(f"GetThumbFilePath: sFajlnev=None [{eredeti}].")
 	return sResult
@@ -156,7 +157,7 @@ def BelyegkepVan(eredeti):
 #A bélyegkép méreteinek kiszámítása
 #Bemenet: szélesség, magasság, orientáció
 #Kimenet: A bélyegkép mérete. Tömb. [0]-szélesség [1]-magasság
-def ComputeBelyegkepSize(szelesseg, magassag, orientacio=1)
+def ComputeBelyegkepSize(szelesseg, magassag, orientacio=1):
 	imageWidth=magassag if orientacio==6 or orientacio==8 else szelesseg
 	imageHeight=szelesseg if orientacio==6 or orientacio==8 else magassag
 	fPercent=float(THUMBNAIL_WIDTH/(imageWidth/100))
@@ -179,11 +180,12 @@ def CreateBelyegkep(imgSource):
 				intOrientation = int(val)
 		belyegSize = ComputeBelyegkepSize(imgSource.size[0], imgSource.size[1], intOrientation)
 		belyegPath = GetThumbFilePath(imgSource.filename)
-		thumbImage = imgSource.resize( (belyegSize[0],belyegsize[1]) )
+		thumbImage = imgSource.resize( (belyegSize[0],belyegSize[1]) )
 		thumbImage.save(belyegPath)
 	except Exception as e:
 		bResult = False
-		hibakiiras("CreateBelyegkep: "+e.Message)
+		hibakiiras("CreateBelyegkep: ")
+		raise e
 	return bResult
 
 #Háttérkép fájl nevét adja vissza a bélyegkép fájlnév alapján.
@@ -200,11 +202,11 @@ def GetWallpaperFilePath(belyegkep):
 	sFajlnev=bontott[1] if len(bontott[1])>0 else None
 	if( sFaljnev != None ):
 		if( os.path.isdir(sUtvonal) ):
-			sResult = belyegkep.replace(f"{THUMBIMAGES_DIRNAME/}","",1)
-		else
+			sResult = belyegkep.replace(f"{THUMBIMAGES_DIRNAME}/","",1)
+		else:
 			hibakiiras(f"GetWallpaperFilePath: '{sUtvonal}' nem könyvtár [{belyegkep}].")
 			sResult=None
-	else
+	else:
 		sResult=None
 		hibakiiras(f"GetWallpaperFilePath: sFajlnev=None [{belyegkep}].")
 	return sResult
@@ -212,7 +214,7 @@ def GetWallpaperFilePath(belyegkep):
 #Tartozik-e háttérkép fájl a megadott bélyegképhez
 #Bemenet: A bélyegkép fájl útvonala
 #Kimenet: A bélyegképhez társított háttérkép fájl létezik: True, nem létezik: False
-def HatterkepVan(belyegkep)
+def HatterkepVan(belyegkep):
 	return True if os.path.isfile(GetWallpaperFilePath(belyegkep)) else False
 
 #Képek feldolgozása
@@ -243,6 +245,7 @@ def KepekFeldolgozasa():
 							intOrientation = int(val)
 					filebytesize = os.path.getsize(dirfile.path)
 					sFilesize = kilo_mega_giga(filebytesize)
+					CreateBelyegkep(wallpaper)
 					kepfajlok.append( {"nev":dirfile.name,"utvonal":dirfile.path,"meret":sFilesize,"dimenzio":imgDimension,"orientacio":intOrientation} )
 			print(f"{KIMENETFAJLNEV} összeállítása...")
 			print(f"{len(kepfajlok)} képfájl található a gyűjteményben.")
