@@ -6,6 +6,7 @@
 import sys
 import os
 import getopt
+import PIL
 from PIL import Image, ExifTags
 
 SCRIPTNEV="wallpapers-indexer.py"
@@ -163,9 +164,9 @@ def ComputeBelyegkepSize(szelesseg, magassag, orientacio=1):
 	fPercent=float(THUMBNAIL_WIDTH/(imageWidth/100))
 	aSize=[0,0]
 	if( orientacio == 6 or orientacio == 8):
-		aSize = [int(float(magassag/100*fPercent)),THUMBNAIL_WIDTH]
+		aSize = [int(float(imageHeight/100*fPercent)),THUMBNAIL_WIDTH]
 	else:
-		aSize = [THUMBNAIL_WIDTH,int(float(magassag/100*fPercent))]
+		aSize = [THUMBNAIL_WIDTH,int(float(imageHeight/100*fPercent))]
 	return aSize
 
 #Bélyegkép készítése és mentése
@@ -178,13 +179,20 @@ def CreateBelyegkep(imgSource):
 		for key, val in exifData.items():
 			if( key in ExifTags.TAGS and ExifTags.TAGS[key].lower() == "orientation" ):
 				intOrientation = int(val)
-		belyegSize = ComputeBelyegkepSize(imgSource.size[0], imgSource.size[1], intOrientation)
+		if( intOrientation == 8 ):
+			thumbImage = imgSource.rotate(90, PIL.Image.NEAREST, expand=1)
+		elif( intOrientation == 3 ):
+			thumbImage = imgSource.rotate(180, PIL.Image.NEAREST, expand=1)
+		elif( intOrientation == 6 ):
+			thumbImage = imgSource.rotate(-90, PIL.Image.NEAREST, expand=1)
+		else:
+			thumbImage = imgSource.copy()
+		belyegSize = ComputeBelyegkepSize(thumbImage.size[0], thumbImage.size[1], 1)
 		belyegPath = GetThumbFilePath(imgSource.filename)
-		thumbImage = imgSource.resize( (belyegSize[0],belyegSize[1]) )
+		thumbImage = thumbImage.resize( (belyegSize[0],belyegSize[1]) )
 		thumbImage.save(belyegPath)
 	except Exception as e:
 		bResult = False
-		hibakiiras("CreateBelyegkep: ")
 		raise e
 	return bResult
 
