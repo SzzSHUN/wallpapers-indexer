@@ -9,15 +9,19 @@ import getopt
 from PIL import Image, ExifTags
 
 SCRIPTNEV="wallpapers-indexer.py"
-SCRIPTVERZIO="20210408.2051"
+SCRIPTVERZIO="20210428.1036"
 #Globális változók értékének feltöltése az lapértelmezésekkel
-WALLPAPERS_DIR="."
+WALLPAPERS_DIRPATH="."
+THUMBIMAGES_DIRNAME=".thumbs"
+THUMBIMAGES_DIRPATH=f"{WALLPAPERS_DIRPATH}/{THUMBIMAGES_DIRNAME}"
 KIMENETFAJLNEV="INDEX.md"
-OUTPUT_MD=f"{WALLPAPERS_DIR}/{KIMENETFAJLNEV}"
-IMAGE_WIDTH=150
+OUTPUT_MD=f"{WALLPAPERS_DIRPATH}/{KIMENETFAJLNEV}"
+THUMBNAIL_WIDTH=150
+THUMBNAIL_WIDTH_MIN=50
+THUMBNAIL_WIDTH_MAX=600
 
 #Üzenet kiírása a standard hibakimenetre
-def print_to_stderr(*szoveg):
+def hibakiiras(*szoveg):
 	print(*szoveg, file = sys.stderr)
 
 #Byte összeg átalakítás olvashatóbb formátumba
@@ -34,7 +38,7 @@ def kilo_mega_giga(int_byte):
 #Parancssori paraméterek feldolgozása
 # True értékkel tér vissza, ha megkezdhető a munka.
 def ParancssorFeldolgozasa():
-	global SCRIPTNEV,OUTPUT_MD, WALLPAPERS_DIR, KIMENETFAJLNEV, IMAGE_WIDTH
+	global SCRIPTNEV,OUTPUT_MD, WALLPAPERS_DIRPATH, KIMENETFAJLNEV, THUMBNAIL_WIDTH
 	bResult = True
 	SCRIPTNEV = sys.argv[0]
 	if( len(sys.argv) > 1 ):
@@ -53,12 +57,15 @@ def ParancssorFeldolgozasa():
 				bResult = False
 				ParancssorVerzio()
 			elif( opt == "--kepek" ):
-				WALLPAPERS_DIR = arg
+				WALLPAPERS_DIRPATH = arg.rstrip('/ ')
 			elif( opt == "--kimenet" ):
-				KIMENETFAJLNEV = arg
+				KIMENETFAJLNEV = arg.strip()
 			elif( opt == "--kepszelesseg" ):
-				IMAGE_WIDTH = arg
-	OUTPUT_MD=f"{WALLPAPERS_DIR}/{KIMENETFAJLNEV}"
+				THUMBNAIL_WIDTH = arg if arg.isnumeric() else THUMBNAIL_WIDTH
+			elif( opt == "--belyeg" ):
+				THUMBIMAGES_DIRNAME= arg.rstrip('/ ')
+	THUMBIMAGES_DIRPATH=f"{WALLPAPERS_DIRPATH}/{THUMBIMAGES_DIRNAME}"
+	OUTPUT_MD=f"{WALLPAPERS_DIRPATH}/{KIMENETFAJLNEV}"
 	return bResult
 
 #Súgó szöveg kiírása
@@ -71,15 +78,20 @@ Használat:{SCRIPTNEV} [PARAMÉTEREK]
 Paraméterek:
 	--kepek
 		Háttérképfájlokat tartalmazó könyvtár útvonalának megadása.
-		Ha nincs megadva, akkor az aktuális köyvtár lesz beállítva ( ./ )
+		Ha nincs megadva, akkor az aktuális köyvtár lesz beállítva
 
 	--kimenet
 		A kimeneti fájl neve
-		Ha nincs megadva, akkor INDEX.md
+		Ha nincs megadva, akkor {KIMENETFAJLNEV}
 
 	--kepszelesseg
 		A táblázatban megjelenő index kép szélessége pixelben.
-		Az alapértelmezett érték: {IMAGE_WIDTH} 
+		Az alapértelmezett érték: {THUMBNAIL_WIDTH} 
+	
+	--belyeg
+		A bélyegképek tárolására szolgáló könyvtár neve.
+		A könyvtár a háttérkép fájlokat tartalmazó mappán belül kerül létrehozásra.
+		Alapértelmezett érték: {THUMBIMAGES_DIRNAME}
 
 	--help
 		Megjeleníti a  súgó szövegét és kilép
@@ -99,20 +111,123 @@ Példák:
 def ParancssorVerzio():
 	print(SCRIPTVERZIO)
 
+# Program paraméterváltozók értékeinek ellenőrzése, javítása
+def ValtozokEllenorzese():
+	global WALLPAPERS_DIRPATH, THUMBIMAGES_DIRNAME, THUMBNAIL_WIDTH
+	if( len(WALLPAPERS_DIRPATH)==0 ):
+		WALLPAPERS_DIRPATH="."
+	if( len(THUMBIMAGES_DIRNAME)==0 ):
+		THUMBIMAGES_DIRNAME = ".thumbs"
+	THUMBNAIL_WIDTH = min(THUMBNAIL_WIDTH_MAX,max(THUMBNAIL_WIDTH_MIN,THUMBNAIL_WIDTH))
+	#A bélyegkép könyvtár meglétének ellenőrzése, létrehozása
+	if( os.path.isdir(THUMBIMAGES_DIRPATH) == False ):
+		os.mkdir(THUMBIMAGES_DIRPATH)
+
+#Thumbnail fájl nevét adja vissza az eredeti fájlnév alapján.
+#Bemenet: A háttérkép fájl neve, útvonal nélkül.
+def GetThumbFileName(eredeti):
+	return f"t@{eredeti}"
+
+#A Thumbfájl útvonalát állítja össze az eredeti fájl alapján.
+#Bemenet: A háttérkép fájl útvonala
+#Kimenet: A háttérkép fájlhoz tartozó bélyegkép útvonala, vagy hiba esetén None.
+def GetThumbFilePath(eredeti):
+	bontott=os.path.split(eredeti)
+	sUtvonal=bontott[0].rstrip('/')
+	sFajlnev=bontott[1] if len(bontott[1])>0 else None
+	if( sFaljnev != None ):
+		if( os.path.isdir(sUtvonal) ):
+			sResult="{1}/{2}/{3}".format(sUtvonal,THUMBIMAGES_DIRNAME,GetThumbFilename(bontott[1]))
+		else
+			sResult=None
+			hibakiiras(f"GetThumbFilePath: '{sUtvonal}' nem könyvtár [{eredeti}].")
+	else
+		sResult=None
+		hibakiiras(f"GetThumbFilePath: sFajlnev=None [{eredeti}].")
+	return sResult
+
+#Van-e már bélyegkép az adott háttérkép fájlhoz?
+#Bemenet: A vizsgálandó háttérkép fájl útvonala
+#Kimenet: True ha van, False ha nincs
+def BelyegkepVan(eredeti):
+	return True if os.path.isfile(GetThumbFilePath(eredeti)) else False
+
+#A bélyegkép méreteinek kiszámítása
+#Bemenet: szélesség, magasság, orientáció
+#Kimenet: A bélyegkép mérete. Tömb. [0]-szélesség [1]-magasság
+def ComputeBelyegkepSize(szelesseg, magassag, orientacio=1)
+	imageWidth=magassag if orientacio==6 or orientacio==8 else szelesseg
+	imageHeight=szelesseg if orientacio==6 or orientacio==8 else magassag
+	fPercent=float(THUMBNAIL_WIDTH/(imageWidth/100))
+	aSize=[0,0]
+	if( orientacio == 6 or orientacio == 8):
+		aSize = [int(float(magassag/100*fPercent)),THUMBNAIL_WIDTH]
+	else:
+		aSize = [THUMBNAIL_WIDTH,int(float(magassag/100*fPercent))]
+	return aSize
+
+#Bélyegkép készítése és mentése
+#Bemenet: A betöltött Wallpaper képet tartalmazó objektum
+def CreateBelyegkep(imgSource):
+	bResult = True
+	try:
+		exifData = imgSource.getexif()
+		intOrientation = 1
+		for key, val in exifData.items():
+			if( key in ExifTags.TAGS and ExifTags.TAGS[key].lower() == "orientation" ):
+				intOrientation = int(val)
+		belyegSize = ComputeBelyegkepSize(imgSource.size[0], imgSource.size[1], intOrientation)
+		belyegPath = GetThumbFilePath(imgSource.filename)
+		thumbImage = imgSource.resize( (belyegSize[0],belyegsize[1]) )
+		thumbImage.save(belyegPath)
+	except Exception as e:
+		bResult = False
+		hibakiiras("CreateBelyegkep: "+e.Message)
+	return bResult
+
+#Háttérkép fájl nevét adja vissza a bélyegkép fájlnév alapján.
+#Bemenet: A bélyegkép fájl neve, útvonal nélkül.
+def GetWallpaperFileName(belyegkep):
+	return belyegkep.replace("t@","",1)
+
+#A háttérkép fájl útvonalát állítja össze a bélyegkép fájl alapján.
+#Bemenet: A bélyegkép fájl útvonala
+#Kimenet: A bélyegképhez tartozó háttérkép útvonala, vagy hiba esetén None
+def GetWallpaperFilePath(belyegkep):
+	bontott=os.path.split(belyegkep)
+	sUtvonal=bontott[0].rstrip('/')
+	sFajlnev=bontott[1] if len(bontott[1])>0 else None
+	if( sFaljnev != None ):
+		if( os.path.isdir(sUtvonal) ):
+			sResult = belyegkep.replace(f"{THUMBIMAGES_DIRNAME/}","",1)
+		else
+			hibakiiras(f"GetWallpaperFilePath: '{sUtvonal}' nem könyvtár [{belyegkep}].")
+			sResult=None
+	else
+		sResult=None
+		hibakiiras(f"GetWallpaperFilePath: sFajlnev=None [{belyegkep}].")
+	return sResult
+
+#Tartozik-e háttérkép fájl a megadott bélyegképhez
+#Bemenet: A bélyegkép fájl útvonala
+#Kimenet: A bélyegképhez társított háttérkép fájl létezik: True, nem létezik: False
+def HatterkepVan(belyegkep)
+	return True if os.path.isfile(GetWallpaperFilePath(belyegkep)) else False
+
 #Képek feldolgozása
 def KepekFeldolgozasa():
-	print(f"Képfájlok könyvtára: {WALLPAPERS_DIR}")
+	print(f"Képfájlok könyvtára: {WALLPAPERS_DIRPATH}")
 	print(f"Kimeneti fájl: {OUTPUT_MD}")
-	print(f"Képek szélessége: {IMAGE_WIDTH}px")
+	print(f"Képek szélessége: {THUMBNAIL_WIDTH}px")
 
-	#Ellenőrizzük a WALLPAPERS_DIR globális változóban megadott könyvtár meglétét.
-	if( os.path.isdir(WALLPAPERS_DIR) == True ):
+	#Ellenőrizzük a WALLPAPERS_DIRPATH globális változóban megadott könyvtár meglétét.
+	if( os.path.isdir(WALLPAPERS_DIRPATH) == True ):
 		#Ha a könyvtár létezik, akkor végigjárjuk a könyvtár képeit és kiírjuk az adatokat az OUTPUT_MD változó által meghatározott fájlba.
 		FilePointer = None
 		kepfajlok = []
 		try:
 			print("Képek feldolgozása...")
-			for dirfile in os.scandir(path=WALLPAPERS_DIR):
+			for dirfile in os.scandir(path=WALLPAPERS_DIRPATH):
 				if( dirfile.path.lower().endswith(".jpg")
 					or dirfile.path.lower().endswith(".jpeg")
 					or dirfile.path.lower().endswith(".png")
@@ -143,7 +258,7 @@ def KepekFeldolgozasa():
 						sDimenzio= f"{kepfajl['dimenzio'][1]}*{kepfajl['dimenzio'][0]}"
 					else:
 						sDimenzio= f"{kepfajl['dimenzio'][0]}*{kepfajl['dimenzio'][1]}"
-					FilePointer.write(f"<img src=\"./{kepfajl['nev']}\" width=\"{IMAGE_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* {kepfajl['nev']}<br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
+					FilePointer.write(f"<img src=\"./{kepfajl['nev']}\" width=\"{THUMBNAIL_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* {kepfajl['nev']}<br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
 			else:
 				FilePointer.write(" :confused: | *Nincsennek képfájlok!* ")
 		except Exception as e:
@@ -154,9 +269,10 @@ def KepekFeldolgozasa():
 				FilePointer.close()
 				print("Kimeneti fájl lezárva.")
 	else: #Ha a könyvtár nem létezik, akkor kilépünk hibaüzenettel.
-		print_to_stderr(f"A(z) {WALLPAPERS_DIR} könyvtár nem létezik! [WALLPAPERS_DIR]")
+		hibakiiras(f"A(z) {WALLPAPERS_DIRPATH} könyvtár nem létezik! [WALLPAPERS_DIRPATH]")
 		return
 
 if __name__ == "__main__":
 	if( ParancssorFeldolgozasa() == True ):
+		ValtozokEllenorzese()
 		KepekFeldolgozasa()
