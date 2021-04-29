@@ -10,7 +10,7 @@ import PIL
 from PIL import Image, ExifTags
 
 SCRIPTNEV="wallpapers-indexer.py"
-SCRIPTVERZIO="20210428.1829"
+SCRIPTVERZIO="20210429.1159"
 
 #Globális változók értékének feltöltése az lapértelmezésekkel
 WALLPAPERS_DIRPATH="."
