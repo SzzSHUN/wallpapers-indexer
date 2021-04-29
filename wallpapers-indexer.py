@@ -208,15 +208,16 @@ def GetWallpaperFilePath(belyegkep):
 	bontott=os.path.split(belyegkep)
 	sUtvonal=bontott[0].rstrip('/')
 	sFajlnev=bontott[1] if len(bontott[1])>0 else None
-	if( sFaljnev != None ):
+	if( sFajlnev != None ):
 		if( os.path.isdir(sUtvonal) ):
-			sResult = belyegkep.replace(f"{THUMBIMAGES_DIRNAME}/","",1)
+			sResult = belyegkep.replace(f"{THUMBIMAGES_DIRNAME}/","",1).replace("t@","")
 		else:
 			hibakiiras(f"GetWallpaperFilePath: '{sUtvonal}' nem könyvtár [{belyegkep}].")
 			sResult=None
 	else:
 		sResult=None
 		hibakiiras(f"GetWallpaperFilePath: sFajlnev=None [{belyegkep}].")
+	#print(f"GetWallpaperFilePath result: {sResult}")
 	return sResult
 
 #Tartozik-e háttérkép fájl a megadott bélyegképhez
@@ -225,11 +226,35 @@ def GetWallpaperFilePath(belyegkep):
 def HatterkepVan(belyegkep):
 	return True if os.path.isfile(GetWallpaperFilePath(belyegkep)) else False
 
+#Bélyegképek ellenőrzése
+#Ha az adott bélyegképhez nem tartozik háttérkép, akkor törölni kell.
+def BelyegkepEllenorzo():
+	if( os.path.isdir(THUMBIMAGES_DIRPATH) == True ):
+		torlendobelyeg=[]
+		for dirfile in os.scandir(path=THUMBIMAGES_DIRPATH):
+			#print("Bélyegkép: {}".format(dirfile.path.lower()))
+			if( "t@" in dirfile.path.lower() ):
+				if( HatterkepVan(dirfile.path) == False ):
+					torlendobelyeg.append(dirfile.path)
+		print("{0}db törlendő bélyegkép van.".format(len(torlendobelyeg)))
+		if( len(torlendobelyeg) > 0 ):
+				for torlendo in torlendobelyeg:
+					try:
+						print(f"Bélyegkép törlése: {torlendo}")
+						os.remove(torlendo)
+					except OSError as ose:
+						hibakiiras(f"A {torlendo} fájl törlése hibát okozott:")
+						hibakiiras(e)
+				print("Elárvult bélyegképek törlése megtörtént.")
+	else:
+		hibakiiras(f"A(z) {THUMBIMAGES_DIRPATH} könyvtár nem létezik! [THUMBIMAGES_DIRPATH]")
+
 #Képek feldolgozása
 def KepekFeldolgozasa():
 	print(f"Képfájlok könyvtára: {WALLPAPERS_DIRPATH}")
+	print(f"Bélyegképek könyvtára: {THUMBIMAGES_DIRPATH}")
+	print(f"Bélyegképek szélessége: {THUMBNAIL_WIDTH}px")
 	print(f"Kimeneti fájl: {OUTPUT_MD}")
-	print(f"Képek szélessége: {THUMBNAIL_WIDTH}px")
 
 	#Ellenőrizzük a WALLPAPERS_DIRPATH globális változóban megadott könyvtár meglétét.
 	if( os.path.isdir(WALLPAPERS_DIRPATH) == True ):
@@ -288,3 +313,4 @@ if __name__ == "__main__":
 	if( ParancssorFeldolgozasa() == True ):
 		ValtozokEllenorzese()
 		KepekFeldolgozasa()
+		BelyegkepEllenorzo()
