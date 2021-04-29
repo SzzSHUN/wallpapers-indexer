@@ -295,7 +295,7 @@ def KepekFeldolgozasa():
 						sDimenzio= f"{kepfajl['dimenzio'][1]}*{kepfajl['dimenzio'][0]}"
 					else:
 						sDimenzio= f"{kepfajl['dimenzio'][0]}*{kepfajl['dimenzio'][1]}"
-					FilePointer.write(f"<img src=\"{GetThumbFilePath(kepfajl['utvonal'])}\" width=\"{THUMBNAIL_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* {kepfajl['nev']}<br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
+					FilePointer.write(f"<img src=\"{GetThumbFilePath(kepfajl['utvonal'])}\" width=\"{THUMBNAIL_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* <a href=\"{kepfajl['utvonal']}\">{kepfajl['nev']}</a><br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
 			else:
 				FilePointer.write(" :confused: | *Nincsennek képfájlok!* ")
 		except Exception as e:
