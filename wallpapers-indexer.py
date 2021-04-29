@@ -140,7 +140,7 @@ def GetThumbFilePath(eredeti):
 	sFajlnev=bontott[1] if len(bontott[1])>0 else None
 	if( sFajlnev != None ):
 		if( os.path.isdir(sUtvonal) ):
-			sResult="{0}/{1}/{2}".format(sUtvonal,THUMBIMAGES_DIRNAME,GetThumbFileName(bontott[1]))
+			sResult="{0}/{1}/{2}".format(sUtvonal,THUMBIMAGES_DIRNAME,GetThumbFileName(sFajlnev))
 		else:
 			sResult=None
 			hibakiiras(f"GetThumbFilePath: '{sUtvonal}' nem könyvtár [{eredeti}].")
@@ -295,7 +295,7 @@ def KepekFeldolgozasa():
 						sDimenzio= f"{kepfajl['dimenzio'][1]}*{kepfajl['dimenzio'][0]}"
 					else:
 						sDimenzio= f"{kepfajl['dimenzio'][0]}*{kepfajl['dimenzio'][1]}"
-					FilePointer.write(f"<img src=\"./{kepfajl['nev']}\" width=\"{THUMBNAIL_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* {kepfajl['nev']}<br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
+					FilePointer.write(f"<img src=\"{GetThumbFilePath(kepfajl['utvonal'])}\" width=\"{THUMBNAIL_WIDTH}px\" height=\"auto\" alt=\"{kepfajl['nev']}\" />|*Fájlnév:* {kepfajl['nev']}<br/>*Méret:* {kepfajl['meret']}<br/>*Dimenzió:* {sDimenzio} pixel\n")
 			else:
 				FilePointer.write(" :confused: | *Nincsennek képfájlok!* ")
 		except Exception as e:
